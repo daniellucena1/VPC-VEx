@@ -168,7 +168,7 @@ resource "aws_instance" "debian_ec2" {
   lifecycle {
    prevent_destroy = true
    create_before_destroy = true
- }
+  }
 }
 
 output "private_key" {
