@@ -72,7 +72,7 @@ resource "aws_route_table_association" "main_association" {
 
 resource "aws_security_group" "main_sg" {
   name        = "${var.projeto}-${var.candidato}-sg"
-  description = "Permitir SSH de qualquer lugar e todo o tráfego de saída"
+  description = "Allow SSH from anywhere and all outbound traffic"
   vpc_id      = aws_vpc.main_vpc.id
 
   # Regras de entrada
@@ -80,6 +80,24 @@ resource "aws_security_group" "main_sg" {
     description      = "Allow SSH from anywhere"
     from_port        = 22
     to_port          = 22
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
+  }
+
+  ingress {
+    description      = "Allow HTTP traffic from anywhere"
+    from_port        = 80
+    to_port          = 80
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
+  }
+
+  ingress {
+    description      = "Allow HTTPS traffic from anywhere"
+    from_port        = 443
+    to_port          = 443
     protocol         = "tcp"
     cidr_blocks      = ["0.0.0.0/0"]
     ipv6_cidr_blocks = ["::/0"]
@@ -117,11 +135,11 @@ data "aws_ami" "debian12" {
 }
 
 resource "aws_instance" "debian_ec2" {
-  ami             = data.aws_ami.debian12.id
-  instance_type   = "t2.micro"
-  subnet_id       = aws_subnet.main_subnet.id
-  key_name        = aws_key_pair.ec2_key_pair.key_name
-  security_groups = [aws_security_group.main_sg.name]
+  ami                    = data.aws_ami.debian12.id
+  instance_type         = "t2.micro"
+  subnet_id             = aws_subnet.main_subnet.id
+  key_name              = aws_key_pair.ec2_key_pair.key_name
+  vpc_security_group_ids = [aws_security_group.main_sg.id]  # Alterado para vpc_security_group_ids
 
   associate_public_ip_address = true
 
@@ -129,17 +147,28 @@ resource "aws_instance" "debian_ec2" {
     volume_size           = 20
     volume_type           = "gp2"
     delete_on_termination = true
+    encrypted             = true  # Melhorias de segurança: volume criptografado
   }
 
   user_data = <<-EOF
               #!/bin/bash
               apt-get update -y
               apt-get upgrade -y
+              apt-get install -y nginx
+              systemctl start nginx
+              systemctl enable nginx
               EOF
 
   tags = {
     Name = "${var.projeto}-${var.candidato}-ec2"
   }
+
+  depends_on = [aws_security_group.main_sg]
+
+  lifecycle {
+   prevent_destroy = true
+   create_before_destroy = true
+ }
 }
 
 output "private_key" {
