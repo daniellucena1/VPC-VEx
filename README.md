@@ -137,6 +137,25 @@ resource "aws_route_table_association" "main_association" {
 
 - Esta parte é responsável pela associação da tabela. Assim, é garantido que a sub-rede use as rotas definidas na tabela para encaminhar tráfego
 
+### OBS.:
+
+- O recurso `aws_route_table_association` não aceita o atributo tags. Para associar tags a uma tabela de rotas, pode-se utilizar o recurso `aws_route_table` para definir as tags e depois associá-las. Como já está sendo feito nesta parte:
+
+```hcl
+resource "aws_route_table" "main_route_table" {
+  vpc_id = aws_vpc.main_vpc.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.main_igw.id
+  }
+
+  tags = {
+    Name = "${var.projeto}-${var.candidato}-route_table"
+  }
+}
+```
+
 ## Grupo de Segurança
 
 ```hcl

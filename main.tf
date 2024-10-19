@@ -68,10 +68,6 @@ resource "aws_route_table" "main_route_table" {
 resource "aws_route_table_association" "main_association" {
   subnet_id      = aws_subnet.main_subnet.id
   route_table_id = aws_route_table.main_route_table.id
-
-  tags = {
-    Name = "${var.projeto}-${var.candidato}-route_table_association"
-  }
 }
 
 resource "aws_security_group" "main_sg" {
